@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import * as BooksAPI from "../BooksAPI";
 import Book from "./Book";
 import PropTypes from "prop-types";
+import { debounce } from "lodash";
 
 const Search = ({ books, updateBook }) => {
-  const [inputValue, setInputValue] = useState("");
   const [resultBooks, setResultBooks] = useState([]);
 
-  const searchInputValue = (value) => {
-    const search = async () => {
+  const searchInputValue = (inputValue) => {
+    const search = async (value) => {
       if (value === "") {
         setResultBooks([]);
 
@@ -17,8 +17,6 @@ const Search = ({ books, updateBook }) => {
       }
 
       const res = await BooksAPI.search(value, 20);
-
-      console.log(res);
 
       if (res.error === "empty query") {
         setResultBooks([]);
@@ -41,10 +39,12 @@ const Search = ({ books, updateBook }) => {
       setResultBooks(mappedResults);
     };
 
-    setInputValue(value);
-
-    search();
+    search(inputValue);
   };
+
+  const debouncedResults = useMemo(() => {
+    return debounce(searchInputValue, 300);
+  }, []);
 
   return (
     <div className="search-books">
@@ -56,8 +56,7 @@ const Search = ({ books, updateBook }) => {
           <input
             type="text"
             placeholder="Search by title, author, or ISBN"
-            value={inputValue}
-            onChange={(event) => searchInputValue(event.target.value)}
+            onChange={(event) => debouncedResults(event.target.value)}
           />
         </div>
       </div>
